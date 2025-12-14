@@ -16,7 +16,7 @@ interface PredictResponse {
 }
 
 function App() {
-  const apiKey = import.meta.env.VITE_API_URL;
+  const apiKey = import.meta.env.VITE_API_URL || 'prediksi-stunting-pada-balita-production-bd50.up.railway.app';
 
   const [formData, setFormData] = useState({
     jenis_kelamin: "",
@@ -129,8 +129,6 @@ function App() {
       [name]: value,
     }));
   };
-
-  console.log(apiKey)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12 px-4">
