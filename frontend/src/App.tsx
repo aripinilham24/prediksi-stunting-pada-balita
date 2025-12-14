@@ -110,7 +110,7 @@ function App() {
       await Swal.fire({
         icon: "error",
         title: "Error",
-        text: message,
+        text: 'Terjadi kesalahan server!',
       });
     } finally {
       setSubmitting(false);
