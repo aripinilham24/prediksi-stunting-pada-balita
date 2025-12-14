@@ -16,7 +16,7 @@ interface PredictResponse {
 }
 
 function App() {
-  const apiKey = import.meta.env.VITE_API_URL || 'prediksi-stunting-pada-balita-production-bd50.up.railway.app';
+  const apiKey = import.meta.env.VITE_API_URL || 'https://prediksi-stunting-pada-balita-production-bd50.up.railway.app';
 
   const [formData, setFormData] = useState({
     jenis_kelamin: "",
