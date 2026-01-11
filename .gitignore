@@ -2,3 +2,5 @@ backend/venv
 backend/__pycache__
 *.pyc
 .env*
+be-vercel/venv
+be-vercel/api/__pycache__

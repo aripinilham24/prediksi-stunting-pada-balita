@@ -1,28 +1,18 @@
+from pathlib import Path
+import numpy as np
+import joblib
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-import joblib
-import numpy as np
 from typing import Optional, Dict
 
-# =============================
-# LOAD MODEL & ENCODER
-# =============================
-# Pastikan path folder 'model/' benar di root project kamu
-try:
-    model = joblib.load("../model/knn_model.pkl")
-    gender_encoder = joblib.load("../model/gender_encoder.pkl")
-except Exception as e:
-    print(f"Error loading model: {e}")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-app = FastAPI(
-    title="API Prediksi Stunting Balita",
-    version="1.0.0"
-)
+model = joblib.load(BASE_DIR / "model" / "knn_model.pkl")
+gender_encoder = joblib.load(BASE_DIR / "model" / "gender_encoder.pkl")
 
-# =============================
-# CORS
-# =============================
+app = FastAPI(title="API Prediksi Stunting", version="1.0.0")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,19 +21,9 @@ app.add_middleware(
 )
 
 class PredictRequest(BaseModel):
-    jenis_kelamin: str = Field(..., description="laki-laki / perempuan")
-    usia: int = Field(..., ge=1, le=60, description="Usia balita (bulan)")
-    tinggi_badan: float = Field(..., gt=30, lt=150, description="Tinggi badan (cm)")
-
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "jenis_kelamin": "laki-laki",
-                "usia": 24,
-                "tinggi_badan": 80
-            }
-        }
-    }
+    jenis_kelamin: str
+    usia: int = Field(..., ge=1, le=60)
+    tinggi_badan: float = Field(..., gt=30, lt=150)
 
 class PredictResponse(BaseModel):
     jenis_kelamin: str
@@ -53,42 +33,28 @@ class PredictResponse(BaseModel):
     keterangan: str
     probabilitas: Optional[Dict[str, float]]
 
-@app.get("/")
-def root():
-    return {"message": "API Prediksi Stunting Aktif (Lightweight Version)"}
-
 KETERANGAN_STATUS = {
-    "severely stunted": "⚠ Sangat pendek parah (risiko sangat tinggi, perlu penanganan segera!)",
-    "stunted": "⚠ Pendek (indikasi stunting, perlu pemantauan gizi)",
-    "normal": "✔ Normal (pertumbuhan baik)",
-    "tinggi": "✔ Lebih tinggi dari rata-rata"
+    "severely stunted": "⚠ Sangat pendek parah",
+    "stunted": "⚠ Pendek",
+    "normal": "✔ Normal",
+    "tinggi": "✔ Tinggi"
 }
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(data: PredictRequest):
     try:
         jk = data.jenis_kelamin.lower()
-        if jk not in ["laki-laki", "perempuan"]:
-            raise HTTPException(status_code=400, detail="Jenis kelamin harus 'laki-laki' atau 'perempuan'")
-
-        # 1. Transform gender menggunakan encoder
         jk_encoded = gender_encoder.transform([jk])[0]
 
-        # 2. Siapkan data sebagai NumPy Array 2D (Sesuai ekspektasi Scikit-Learn)
-        # Format: [[Umur, Jenis_Kelamin, Tinggi_Badan]]
-        input_data = np.array([[data.usia, jk_encoded, data.tinggi_badan]])
+        X = np.array([[data.usia, jk_encoded, data.tinggi_badan]])
+        hasil = model.predict(X)[0]
 
-        # 3. Prediksi langsung tanpa Pandas
-        hasil = model.predict(input_data)[0]
-
-        # 4. Ambil Probabilitas jika tersedia
         probabilitas = None
         if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(input_data)[0]
-            labels = model.classes_
+            probs = model.predict_proba(X)[0]
             probabilitas = {
-                str(labels[i]): round(float(probs[i]) * 100, 2)
-                for i in range(len(labels))
+                model.classes_[i]: round(float(probs[i]) * 100, 2)
+                for i in range(len(probs))
             }
 
         return {
@@ -96,7 +62,7 @@ def predict(data: PredictRequest):
             "usia": data.usia,
             "tinggi_badan": data.tinggi_badan,
             "hasil_prediksi": str(hasil),
-            "keterangan": KETERANGAN_STATUS.get(hasil, "Keterangan tidak tersedia"),
+            "keterangan": KETERANGAN_STATUS.get(hasil),
             "probabilitas": probabilitas
         }
 
