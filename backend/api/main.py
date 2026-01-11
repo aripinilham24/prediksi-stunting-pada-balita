@@ -8,8 +8,8 @@ from typing import Optional, Dict
 # =============================
 # LOAD MODEL & ENCODER
 # =============================
-model = joblib.load("model/knn_model.pkl")
-gender_encoder = joblib.load("model/gender_encoder.pkl")
+model = joblib.load("../model/knn_model.pkl")
+gender_encoder = joblib.load("../model/gender_encoder.pkl")
 
 app = FastAPI(
     title="API Prediksi Stunting Balita",
