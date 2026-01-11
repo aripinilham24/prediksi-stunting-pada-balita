@@ -7,3 +7,4 @@ env/
 datasets/
 train_model.pyc
 data_balita.csv
+Dockerfile
