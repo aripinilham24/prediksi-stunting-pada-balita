@@ -1,0 +1,10 @@
+.git
+__pycache__
+*.pyc
+venv/
+env/
+.env
+datasets/
+train_model.pyc
+data_balita.csv
+Dockerfile
